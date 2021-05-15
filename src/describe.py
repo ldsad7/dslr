@@ -1,61 +1,69 @@
-from math import sqrt
-from typing import Optional, List
+from functools import partial
+from math import isnan
+from typing import Optional, List, Tuple
 
 import click
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype
 
+if __name__ == '__main__':
+    from describe_funcs import count, mean, std, min_, first_percentile, second_percentile, third_percentile, max_
+else:
+    from .describe_funcs import count, mean, std, min_, first_percentile, second_percentile, third_percentile, max_
 
-def print_columns(df: pd.DataFrame) -> None:
-    s = "%7s" % ""
+ROWS: List[str] = ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
+FUNCTIONS = [partial(count), partial(mean), partial(std), partial(min_), partial(first_percentile),
+             partial(second_percentile), partial(third_percentile), partial(max_)]
+
+
+def get_column_names_and_values(df: pd.DataFrame) -> Tuple[List[str], List[List[float]]]:
+    values: List[List[float]] = [[] for _ in range(len(ROWS))]
+    columns: List[str] = []
     for column in df:
-        s
-    print(s)
+        if is_numeric_dtype(df[column]):
+            for i, (row, function) in enumerate(zip(ROWS, FUNCTIONS)):
+                values[i].append(function(df[column]))
+            columns.append(column)
+    return columns, values
 
 
-def count(df_column: pd.DataFrame) -> float:
-    return sum(1 for _ in df_column)
+def print_output(columns: List[str], values: List[List[float]]) -> None:
+    max_lengths = [max(len(row) for row in ROWS)]
+    before_dot_max_lengths = []
+    after_dot_max_lengths = []
+    for i, column in enumerate(columns):
+        before_dot_lengths, after_dot_lengths = [[] for _ in range(2)]
+        for lst in values:
+            num_as_str: str = "%.6f" % lst[i]
+            if '.' in num_as_str:
+                before_dot, after_dot = num_as_str.split('.', 1)
+            else:
+                before_dot, after_dot = num_as_str, ''
+            if before_dot.lstrip("-") != 'nan':
+                before_dot_lengths.append(len(before_dot.lstrip("-")))
+            after_dot_lengths.append(len(after_dot.rstrip('0')) or 1)
+        before_dot_max_lengths.append(max(before_dot_lengths))
+        after_dot_max_lengths.append(max(after_dot_lengths))
+        max_lengths.append(max(len(column), max(before_dot_lengths) + max(after_dot_lengths) + 1))
+    print(f"%{max_lengths[0]}s" % "", end="")
+    for i, column in enumerate(columns):
+        print(f"%{max_lengths[i + 1] + 2}s" % column, end="")
+    print()
+    for i, row in enumerate(ROWS):
+        print(f"%-{max_lengths[0]}s" % row, end="")
+        for j, column in enumerate(columns):
+            if isnan(values[i][j]):
+                print(f"%{max_lengths[j + 1] + 2}s" % 'NaN', end="")
+            else:
+                print(f"%{max_lengths[j + 1] + 2}.{after_dot_max_lengths[j]}f" % values[i][j], end="")
+        print()
 
 
-def mean(df_column: pd.DataFrame) -> float:
-    return sum(value for value in df_column) / count(df_column)
-
-
-def std(df_column: pd.DataFrame) -> float:
-    mean_value: float = mean(df_column)
-    return sqrt(sum((value - mean_value) ** 2 for value in df_column) / count(df_column))
-
-
-def min_(df_column: pd.DataFrame) -> float:
-    min_value = df_column[0]
-    for value in df_column:
-        if value < min_value:
-            min_value = value
-    return min_value
-
-
-def max_(df_column: pd.DataFrame) -> float:
-    max_value = df_column[0]
-    for value in df_column:
-        if value > max_value:
-            max_value = value
-    return max_value
-
-
-def percentile(df_column: pd.DataFrame, percent: float) -> float:
-    round(count(df_column) * percent)
-
-
-def first_percentile(df_column: pd.DataFrame) -> float:
-    return percentile(df_column, 0.25)
-
-
-def second_percentile(df_column: pd.DataFrame) -> float:
-    return percentile(df_column, 0.5)
-
-
-def third_percentile(df_column: pd.DataFrame) -> float:
-    return percentile(df_column, 0.75)
+def count_and_print_describe_output(df: pd.DataFrame) -> None:
+    columns, values = get_column_names_and_values(df)
+    if not columns:
+        raise ValueError("Given dataset doesn't contain data")  # though pandas returns some data frame in this case
+    print_output(columns, values)
 
 
 @click.command()
@@ -73,29 +81,11 @@ def describe(path_to_dataset: str, separator: str = ",", verbose: bool = False) 
     except pd.errors.ParserError as e:
         print(f'File on the path "{path_to_dataset}" is incorrect ({e})')
         exit(1)
-    # print_columns(df)
-    counts: List[float] = []
-    means: List[float] = []
-    stds: List[float] = []
-    mins: List[float] = []
-    first_percentiles: List[float] = []
-    second_percentiles: List[float] = []
-    third_percentiles: List[float] = []
-    maxs: List[float] = []
-    for column in df:
-        counts.append(count(df[column]))
-        means.append(mean(df[column]))
-        stds.append(std(df[column]))
-        mins.append(min_(df[column]))
-        first_percentiles.append(first_percentile(df[column]))
-        second_percentiles.append(second_percentile(df[column]))
-        third_percentiles.append(third_percentile(df[column]))
-        maxs.append(max_(df[column]))
-        if is_numeric_dtype(df[column]):
-            # print(column, df[column].count())
-            pass
-    print(df.describe())
+    count_and_print_describe_output(df)
 
 
 if __name__ == '__main__':
-    describe()
+    try:
+        describe()
+    except Exception as e:
+        print(f'Произошла ошибка: {e}')
