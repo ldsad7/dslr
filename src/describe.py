@@ -1,10 +1,12 @@
 from functools import partial
 from math import isnan
-from typing import Optional, List, Tuple
+from typing import List, Tuple
 
 import click
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype
+
+from utils import read_dataset
 
 if __name__ == '__main__':
     from describe_funcs import count, mean, std, min_, first_percentile, second_percentile, third_percentile, max_
@@ -73,14 +75,7 @@ def count_and_print_describe_output(df: pd.DataFrame) -> None:
 def describe(path_to_dataset: str, separator: str = ",", verbose: bool = False) -> None:
     """`describe` reproduces pandas's describe method"""
 
-    if verbose:
-        print(f'File on the path "{path_to_dataset}" expect the separator `{separator}`')
-    df: Optional[pd.DataFrame] = None
-    try:
-        df = pd.read_csv(path_to_dataset, sep=separator)
-    except pd.errors.ParserError as e:
-        print(f'File on the path "{path_to_dataset}" is incorrect ({e})')
-        exit(1)
+    df: pd.DataFrame = read_dataset(path_to_dataset, separator, verbose)
     count_and_print_describe_output(df)
 
 
