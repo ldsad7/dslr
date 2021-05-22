@@ -83,4 +83,4 @@ if __name__ == '__main__':
     try:
         describe()
     except Exception as e:
-        print(f'Произошла ошибка: {e}')
+        print(f'Error happened: {e}')

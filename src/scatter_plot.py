@@ -42,4 +42,4 @@ if __name__ == '__main__':
     try:
         draw_scatter_plot()
     except Exception as e:
-        print(f'Произошла ошибка: {e}')
+        print(f'Error happened: {e}')

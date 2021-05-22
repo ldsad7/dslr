@@ -3,7 +3,6 @@ import json
 import click
 import numpy as np
 import pandas as pd
-from pandas.core.dtypes.common import is_numeric_dtype
 
 from log_reg import LogReg
 from utils import read_dataset
@@ -28,8 +27,6 @@ def train(path_to_dataset: str, target_column: str = 'Hogwarts House', file_with
 
     features = df.select_dtypes(include=[np.number]).drop(
         [target_column, 'Index'], axis=1, errors='ignore').fillna(df.mean(axis=0))
-    for column in features.columns:
-        assert is_numeric_dtype(features[column])
     features = np.hstack((np.ones((features.shape[0], 1)), features))
     features_mean = features.mean(axis=0)
     features_std = features.std(axis=0)
@@ -51,7 +48,8 @@ def train(path_to_dataset: str, target_column: str = 'Hogwarts House', file_with
         json.dump({
             'features_mean': features_mean.tolist(),
             'features_std': features_std.tolist(),
-            'coefficients': coefficients
+            'coefficients': coefficients,
+            'target_values': unique_target_values.tolist()
         }, f)
 
 
@@ -59,7 +57,4 @@ if __name__ == '__main__':
     try:
         train()
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        print(f'Произошла ошибка: {e}')
+        print(f'Error happened: {e}')
