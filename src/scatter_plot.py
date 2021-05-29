@@ -11,11 +11,11 @@ from utils import read_dataset
 
 @click.command()
 @click.argument("path_to_dataset", default="datasets/dataset_train.csv")
-@click.option("--separator", default=",", help="separator in the file")
-@click.option("--column_1", default="Astronomy", help="X column")
-@click.option("--column_2", default="Defense Against the Dark Arts", help="Y column")
-@click.option("--verbose", is_flag=True, default=False, help="verbose output")
-@click.option("--save_to_image", default=None, help="save to this image")
+@click.option("--separator", '-s', default=",", help="separator in the file")
+@click.option("--column_1", '-c1', default="Astronomy", help="X column")
+@click.option("--column_2", '-c2', default="Defense Against the Dark Arts", help="Y column")
+@click.option("--verbose", '-v', is_flag=True, default=False, help="verbose output")
+@click.option("--save_to_image", '-sti', default=None, help="save to this image")
 def draw_scatter_plot(path_to_dataset: str, separator: str = ",", column_1: str = "Astronomy",
                       column_2: str = "Defense Against the Dark Arts", verbose: bool = False,
                       save_to_image: Optional[str] = None) -> None:

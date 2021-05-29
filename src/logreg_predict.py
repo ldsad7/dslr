@@ -11,16 +11,20 @@ from utils import read_dataset
 
 @click.command()
 @click.argument("path_to_dataset")
-@click.option("--target_column", default="Hogwarts House", help="target feature name which we predict")
-@click.option("--file_with_params", default="params.json", help="the file to which we saved learnt weights")
-@click.option("--separator", default=",", help="separator in the file")
-@click.option("--verbose", is_flag=True, default=False, help="verbose output")
-@click.option("--file_with_predictions", default="houses.csv", help="the file to which we save predictions")
-def predict(path_to_dataset: str, target_column: str = 'Hogwarts House', file_with_params='params.json',
-            separator: str = ",", verbose: bool = False, file_with_predictions: str = "houses.csv") -> None:
+@click.option("--target_column", '-tc', default="Hogwarts House", help="target feature name which we predict")
+@click.option("--exclude_columns", '-ec', default="Astronomy", help="features to exclude from the given dataset")
+@click.option("--file_with_params", '-fwpa', default="params.json", help="the file to which we saved learnt weights")
+@click.option("--separator", '-s', default=",", help="separator in the file")
+@click.option("--verbose", '-v', is_flag=True, default=False, help="verbose output")
+@click.option("--file_with_predictions", '-fwpr', default="houses.csv", help="the file to which we save predictions")
+def predict(path_to_dataset: str, target_column: str = 'Hogwarts House', exclude_columns: str = "Astronomy",
+            file_with_params='params.json', separator: str = ",", verbose: bool = False,
+            file_with_predictions: str = "houses.csv") -> None:
     df: pd.DataFrame = read_dataset(path_to_dataset, separator, verbose)
 
-    features = df.select_dtypes(include=[np.number]).drop('Index', axis=1, errors='ignore').fillna(df.mean(axis=0))
+    features = df.select_dtypes(include=[np.number]).drop(
+        ['Index', target_column, *map(str.strip, exclude_columns.split(','))],
+        axis=1, errors='ignore').fillna(df.mean(axis=0))
     features = np.hstack((np.ones((features.shape[0], 1)), features))
 
     if verbose:
@@ -34,7 +38,8 @@ def predict(path_to_dataset: str, target_column: str = 'Hogwarts House', file_wi
 
     error_message = f"Inconsistent or incorrect data: {data}"
     assert coefficients.shape[0] == target_values.shape[0] and target_values.shape[0] > 0, error_message
-    assert features.shape == features_mean.shape == features_std.shape == coefficients[0].shape, error_message
+    assert features.shape[1] == features_mean.shape[0] == features_std.shape[0] == coefficients[0].shape[0], \
+        error_message
 
     features = (features - features_mean) / (features_std + 10e-10)
 
@@ -42,21 +47,20 @@ def predict(path_to_dataset: str, target_column: str = 'Hogwarts House', file_wi
 
     results = np.empty(0)
     for i, target_value in enumerate(target_values):
-        results = np.vstack(results, log_reg.predict(features, coefficients[i]))
-    print(results)
-    results = list(enumerate(results))
-
-    with open(file_with_predictions, 'w', encoding='utf-8') as f:
+        result = log_reg.predict(features, coefficients[i])
+        if not results.shape[0]:
+            results = result
+        else:
+            results = np.hstack((results, result))
+    results = [target_values[result] for result in np.argmax(results, axis=1)]
+    with open(file_with_predictions, 'w', encoding='utf-8', newline='') as f:
         writer = csv.writer(f, delimiter=',')
         writer.writerow(['Index', target_column])
-        writer.writerows(results)
+        writer.writerows(list(enumerate(results)))
 
 
 if __name__ == '__main__':
     try:
         predict()
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
         print(f'Error happened: {e}')

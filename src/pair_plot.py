@@ -12,10 +12,10 @@ from utils import read_dataset
 
 @click.command()
 @click.argument("path_to_dataset", default="datasets/dataset_train.csv")
-@click.option("--step_size", default=7, help="number of columns to draw in one pairplot")
-@click.option("--separator", default=",", help="separator in the file")
-@click.option("--verbose", is_flag=True, default=False, help="verbose output")
-@click.option("--save_to_image", default=None, help="save to this image")
+@click.option("--step_size", '-ss', default=7, help="number of columns to draw in one pairplot")
+@click.option("--separator", '-s', default=",", help="separator in the file")
+@click.option("--verbose", '-v', is_flag=True, default=False, help="verbose output")
+@click.option("--save_to_image", '-sti', default=None, help="save to this image")
 def draw_pair_plot(path_to_dataset: str, step_size: int = 7, separator: str = ",", verbose: bool = False,
                    save_to_image: Optional[str] = None) -> None:
     df: pd.DataFrame = read_dataset(path_to_dataset, separator, verbose)

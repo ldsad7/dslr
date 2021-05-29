@@ -1,6 +1,6 @@
 from functools import partial
 from math import isnan
-from typing import List, Tuple
+from typing import List, Tuple, Callable
 
 import click
 import pandas as pd
@@ -9,28 +9,29 @@ from pandas.core.dtypes.common import is_numeric_dtype
 from utils import read_dataset
 
 if __name__ == '__main__':
-    from describe_funcs import count, mean, std, min_, first_percentile, second_percentile, third_percentile, max_
+    from describe_funcs import (
+        count, mean, std, min_, first_percentile, second_percentile, third_percentile, max_, amplitude
+    )
 else:
-    from .describe_funcs import count, mean, std, min_, first_percentile, second_percentile, third_percentile, max_
-
-ROWS: List[str] = ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
-FUNCTIONS = [partial(count), partial(mean), partial(std), partial(min_), partial(first_percentile),
-             partial(second_percentile), partial(third_percentile), partial(max_)]
+    from .describe_funcs import (
+        count, mean, std, min_, first_percentile, second_percentile, third_percentile, max_, amplitude
+    )
 
 
-def get_column_names_and_values(df: pd.DataFrame) -> Tuple[List[str], List[List[float]]]:
-    values: List[List[float]] = [[] for _ in range(len(ROWS))]
+def get_column_names_and_values(
+        df: pd.DataFrame, rows: List[str], functions: List[Callable]) -> Tuple[List[str], List[List[float]]]:
+    values: List[List[float]] = [[] for _ in range(len(rows))]
     columns: List[str] = []
     for column in df:
         if is_numeric_dtype(df[column]):
-            for i, (row, function) in enumerate(zip(ROWS, FUNCTIONS)):
+            for i, (row, function) in enumerate(zip(rows, functions)):
                 values[i].append(function(df[column]))
             columns.append(column)
     return columns, values
 
 
-def print_output(columns: List[str], values: List[List[float]]) -> None:
-    max_lengths = [max(len(row) for row in ROWS)]
+def print_output(columns: List[str], values: List[List[float]], rows: List[str]) -> None:
+    max_lengths = [max(len(row) for row in rows)]
     before_dot_max_lengths = []
     after_dot_max_lengths = []
     for i, column in enumerate(columns):
@@ -51,7 +52,7 @@ def print_output(columns: List[str], values: List[List[float]]) -> None:
     for i, column in enumerate(columns):
         print(f"%{max_lengths[i + 1] + 2}s" % column, end="")
     print()
-    for i, row in enumerate(ROWS):
+    for i, row in enumerate(rows):
         print(f"%-{max_lengths[0]}s" % row, end="")
         for j, column in enumerate(columns):
             if isnan(values[i][j]):
@@ -61,22 +62,35 @@ def print_output(columns: List[str], values: List[List[float]]) -> None:
         print()
 
 
-def count_and_print_describe_output(df: pd.DataFrame) -> None:
-    columns, values = get_column_names_and_values(df)
+def count_and_print_describe_output(df: pd.DataFrame, add_fields: bool = False) -> None:
+    rows: List[str] = ["count", "mean", "std", "min", "25%", "50%", "75%", "max"]
+    functions: List[Callable] = [
+        partial(count), partial(mean), partial(std), partial(min_), partial(first_percentile),
+        partial(second_percentile), partial(third_percentile), partial(max_)
+    ]
+
+    if add_fields:
+        rows.extend(['ucount', 'umean', 'ustd', 'ampl'])
+        functions.extend([
+            partial(count, unique=True), partial(mean, unique=True), partial(std, unique=True), partial(amplitude)
+        ])
+
+    columns, values = get_column_names_and_values(df, rows, functions)
     if not columns:
         raise ValueError("Given dataset doesn't contain data")  # though pandas returns some data frame in this case
-    print_output(columns, values)
+    print_output(columns, values, rows)
 
 
 @click.command()
 @click.argument("path_to_dataset")
-@click.option("--separator", default=",", help="separator in the file")
-@click.option("--verbose", is_flag=True, default=False, help="verbose output")
-def describe(path_to_dataset: str, separator: str = ",", verbose: bool = False) -> None:
+@click.option("--separator", '-s', default=",", help="separator in the file")
+@click.option("--verbose", '-v', is_flag=True, default=False, help="verbose output")
+@click.option("--add_fields", '-a', is_flag=True, default=False, help="add additional fields to the describe output")
+def describe(path_to_dataset: str, separator: str = ",", verbose: bool = False, add_fields: bool = False) -> None:
     """`describe` reproduces pandas's describe method"""
 
     df: pd.DataFrame = read_dataset(path_to_dataset, separator, verbose)
-    count_and_print_describe_output(df)
+    count_and_print_describe_output(df, add_fields)
 
 
 if __name__ == '__main__':

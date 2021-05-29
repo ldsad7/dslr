@@ -1,4 +1,4 @@
-from math import sqrt, ceil, isnan
+from math import sqrt, ceil
 from typing import Optional
 
 import click
@@ -14,9 +14,9 @@ COLORS = ['g', 'r', 'y', 'b', 'c']
 
 @click.command()
 @click.argument("path_to_dataset", default="datasets/dataset_train.csv")
-@click.option("--separator", default=",", help="separator in the file")
-@click.option("--verbose", is_flag=True, default=False, help="verbose output")
-@click.option("--save_to_image", default=None, help="save to this image")
+@click.option("--separator", '-s', default=",", help="separator in the file")
+@click.option("--verbose", '-v', is_flag=True, default=False, help="verbose output")
+@click.option("--save_to_image", '-sti', default=None, help="save to this image")
 def draw_histogram(path_to_dataset: str, separator: str = ",", verbose: bool = False,
                    save_to_image: Optional[str] = None) -> None:
     df: pd.DataFrame = read_dataset(path_to_dataset, separator, verbose)

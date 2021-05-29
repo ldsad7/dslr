@@ -4,17 +4,23 @@ from typing import List
 import pandas as pd
 
 
-def count(df_column: pd.DataFrame) -> float:
-    return sum(1 for value in df_column if not isnan(value))
+def count(df_column: pd.DataFrame, unique=False) -> float:
+    values = df_column
+    if unique:
+        values = set(df_column)
+    return sum(1 for value in values if not isnan(value))
 
 
-def mean(df_column: pd.DataFrame) -> float:
+def mean(df_column: pd.DataFrame, unique=False) -> float:
     if count(df_column) == 0:
         return float('nan')
-    return sum(value for value in df_column if not isnan(value)) / count(df_column)
+    values = df_column
+    if unique:
+        values = set(df_column)
+    return sum(value for value in values if not isnan(value)) / count(df_column, unique=unique)
 
 
-def std(df_column: pd.DataFrame) -> float:
+def std(df_column: pd.DataFrame, unique=False) -> float:
     """
     Normalized by N-1 by default (c)
     https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.std.html#pandas.DataFrame.std
@@ -23,8 +29,11 @@ def std(df_column: pd.DataFrame) -> float:
     cnt: float = count(df_column)
     if cnt < 2:
         return float('nan')
-    mean_value: float = mean(df_column)
-    return sqrt(sum((value - mean_value) ** 2 for value in df_column if not isnan(value)) / (cnt - 1))
+    mean_value: float = mean(df_column, unique=unique)
+    values = df_column
+    if unique:
+        values = set(df_column)
+    return sqrt(sum((value - mean_value) ** 2 for value in values if not isnan(value)) / (cnt - 1))
 
 
 def min_(df_column: pd.DataFrame) -> float:
@@ -57,6 +66,10 @@ def max_(df_column: pd.DataFrame) -> float:
         if value > max_value:
             max_value = value
     return max_value
+
+
+def amplitude(df_column: pd.DataFrame) -> float:
+    return max_(df_column) - min_(df_column)
 
 
 def quick_sort(lst: List[float]) -> List[float]:
