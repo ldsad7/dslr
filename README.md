@@ -5,14 +5,21 @@ Tests:
 
 Steps:
 - `python -m venv myvenv`
-- `source myvenv/bin/activate`
+- `myvenv\Scripts\activate`
 - `python -m pip install -r requirements.txt`
 
 Usages:
-- sgd: `py src\logreg_train.py datasets\dataset_train.csv -v -b 0`
-- mini-batch gd: `py src\logreg_train.py datasets\dataset_train.csv -v -b 0.2`
-- gd: `py src\logreg_train.py datasets\dataset_train.csv -v -b 1`
+- describe: `py src\describe.py datasets\dataset_train.csv`
+- histogram: `py src\histogram.py datasets\dataset_train.csv`
+- pair plot: `py src\pair_plot.py datasets\dataset_train.csv`
+- scatter plot: `py src\scatter_plot.py datasets\dataset_train.csv`
+- gd: `py src\logreg_train.py datasets\dataset_train.csv -v`
 - predict on test dataset: `py src\logreg_predict.py datasets\dataset_test.csv`
+
+Bonuses:
+- describe: `py src\describe.py -a datasets\dataset_train.csv`
+- sgd: `py src\logreg_train.py datasets\dataset_train.csv -v -b 0`
+- mini-batch gd: `py src\logreg_train.py datasets\dataset_train.csv -v -b 0.2 --save_to_image ""`
 - evaluate results (count accuracy): `py src\evaluate.py`
 
 Docs:
